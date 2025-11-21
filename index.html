@@ -591,6 +591,35 @@
     const pnl = calculatePnL(asset, entry, exit, qty, position);
     pnlInput.value = pnl.toFixed(2);
 }
+    function calculatePnL(asset, entry, exit, qty, position) {
+    const type = assetType[asset];
+    const diff = position === 'Long' ? (exit - entry) : (entry - exit);
+
+    switch (type) {
+        case "forex":          // EUR/USD, GBP/USD dll
+            return diff * qty * 100000;
+
+        case "forexJPY":       // USD/JPY
+            return diff * qty * 1000;
+
+        case "gold":           // XAU/USD
+            return diff * qty * 100;
+
+        case "index":          // NASDAQ, S&P500, US30
+            return diff * qty * 1;
+
+        case "oil":            // USOIL
+            return diff * qty * 1000;
+
+        case "crypto":         // BTC/USD, ETH/USD
+            return diff * qty * 1;
+
+        default:
+            return diff * qty;
+    }
+}
+
+
     function handleFormSubmit(e) {
         e.preventDefault();
         const tradeId = document.getElementById('trade-id').value, pnl = parseFloat(document.getElementById('pnl').value);
