@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jurnal Trading Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0A0F1A;
+            --bg-panel: rgba(10, 20, 40, 0.6);
+            --border-color: rgba(0, 190, 255, 0.2);
+            --glow-color: rgba(0, 190, 255, 0.8);
+            --text-primary: #E0EFFF;
+            --text-secondary: #8C9BB3;
+            --accent-cyan: #00BEFF;
+            --accent-green: #00FFB2;
+            --accent-red: #FF4D4D;
+            --accent-purple: #9E7BFF;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 25px rgba(0, 190, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .panel:hover {
+            border-color: var(--glow-color);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 190, 255, 0.15);
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+        
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .new-trade-animation { animation: slideInLeft 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+
+        .nav-active {
+            background-color: var(--accent-cyan);
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 15, 26, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50; opacity: 0; visibility: hidden;
+            transition: all 0.3s ease-out;
+        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: linear-gradient(145deg, rgba(10, 20, 40, 0.8), rgba(15, 25, 45, 0.8));
+            padding: 2rem; border-radius: 1rem;
+            width: 90%; max-width: 600px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 50px rgba(0, 190, 255, 0.15);
+            transform: scale(0.95) translateY(10px);
+            transition: all 0.3s ease-out;
+        }
+        .modal-overlay.visible .modal-content { transform: scale(1) translateY(0px); }
+
+        .aurora-background { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; }
+        .aurora-blob { position: absolute; border-radius: 50%; filter: blur(150px); opacity: 0.15; animation: move 40s infinite alternate; }
+        .blob1 { width: 600px; height: 600px; background: var(--accent-cyan); top: -25%; left: -15%; }
+        .blob2 { width: 700px; height: 700px; background: var(--accent-purple); bottom: -35%; right: -25%; animation-duration: 50s; animation-delay: -15s; }
+        @keyframes move {
+            from { transform: translate(0, 0) rotate(0deg) scale(1); }
+            to { transform: translate(200px, 100px) rotate(180deg) scale(1.3); }
+        }
+
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { display: none; position: absolute; background-color: #111827; min-width: 240px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5); z-index: 1; border-radius: 0.5rem; border: 1px solid var(--border-color); padding: 0.5rem 0; animation: fadeInUp 0.3s ease; }
+        .dropdown-content a { color: var(--text-secondary); padding: 12px 16px; text-decoration: none; display: flex; align-items: center; font-size: 0.875rem; transition: all 0.2s ease; }
+        .dropdown-content a:hover { background-color: rgba(0, 190, 255, 0.1); color: var(--text-primary); padding-left: 20px;}
+        .dropdown:hover .dropdown-content { display: block; }
+        
+        .hud-input {
+            background-color: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        .hud-input:focus {
+            background-color: rgba(0, 25, 40, 0.5);
+            border-color: var(--glow-color);
+            box-shadow: 0 0 10px rgba(0, 190, 255, 0.3);
+            outline: none;
+            ring: 0;
+        }
+
+        /* Hide number input spinners */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="aurora-background">
+        <div class="aurora-blob blob1"></div>
+        <div class="aurora-blob blob2"></div>
+    </div>
+
+    <div class="min-h-screen flex flex-col relative z-10">
+        <header class="bg-black/30 backdrop-blur-sm border-b border-[var(--border-color)] sticky top-0 z-20">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center space-x-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[var(--accent-cyan)] flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                            <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                        </svg>
+                        <div class="dropdown">
+                            <button class="flex items-center space-x-2 text-xl font-bold text-white focus:outline-none transition-colors hover:text-[var(--accent-cyan)]">
+                                <span id="current-journal-name"></span>
+                                <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                            </button>
+                            <div id="journal-switcher" class="dropdown-content">
+                                <!-- Journal list populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                    <nav class="flex items-center space-x-1">
+                         <button id="nav-dashboard" onclick="switchView('dashboard')" class="px-4 py-2 rounded-md text-sm font-medium transition-all duration-200">Dashboard</button>
+                         <button id="nav-log" onclick="switchView('log')" class="px-4 py-2 rounded-md text-sm font-medium transition-all duration-200">Log Trade</button>
+                         <button onclick="promptResetData()" title="Reset Jurnal Ini" class="p-2 rounded-md text-sm font-medium text-gray-400 hover:bg-[var(--accent-red)]/20 hover:text-[var(--accent-red)] transition-all duration-200">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                             </svg>
+                         </button>
+                         <button onclick="promptLotCalculator()" title="Alat Bantu" class="p-2 rounded-md text-sm font-medium text-gray-400 hover:bg-[var(--accent-cyan)]/20 hover:text-[var(--accent-cyan)] transition-all duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zM6 7a1 1 0 011-1h2a1 1 0 110 2H7a1 1 0 01-1-1zm0 4a1 1 0 011-1h2a1 1 0 110 2H7a1 1 0 01-1-1zm4-4a1 1 0 100 2h2a1 1 0 100-2h-2zm0 4a1 1 0 100 2h2a1 1 0 100-2h-2zm-4 4a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" />
+                            </svg>
+                         </button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
+            <div id="dashboard-view">
+                <div id="main-dashboard-content">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <!-- Stat Card -->
+                        <div class="panel rounded-xl p-6 animate-fade-in-up">
+                             <div class="flex justify-between items-center text-gray-400">
+                                <p class="text-sm font-medium">Total P/L</p>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 10v-1m0 0a2.5 2.5 0 000-5m0 5a2.5 2.5 0 010-5m0 5H9.401M12 18a2.5 2.5 0 002.599-1M12 18H9.401M14.599 17A2.5 2.5 0 0112 18m0-13a2.5 2.5 0 00-2.599 1M12 5a2.5 2.5 0 012.599 1m0 0H14.599"/></svg>
+                             </div>
+                             <p id="total-pnl" class="text-3xl font-bold mt-2">$0.00</p>
+                        </div>
+                         <!-- Stat Card -->
+                        <div class="panel rounded-xl p-6 animate-fade-in-up" style="animation-delay: 100ms;">
+                             <div class="flex justify-between items-center text-gray-400">
+                                <p class="text-sm font-medium">Win Rate</p>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                             </div>
+                            <p id="win-rate" class="text-3xl font-bold mt-2">0%</p>
+                        </div>
+                         <!-- Stat Card -->
+                        <div class="panel rounded-xl p-6 animate-fade-in-up" style="animation-delay: 200ms;">
+                            <div class="flex justify-between items-center text-gray-400">
+                                <p class="text-sm font-medium">Total Trades</p>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            </div>
+                            <p id="total-trades" class="text-3xl font-bold mt-2">0</p>
+                        </div>
+                         <!-- Stat Card -->
+                        <div class="panel rounded-xl p-6 animate-fade-in-up" style="animation-delay: 300ms;">
+                            <div class="flex justify-between items-center text-gray-400">
+                                <p class="text-sm font-medium">Saldo Saat Ini</p>
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M8.433 7.418c.158-.103.346-.196.567-.267v1.698a2.5 2.5 0 00-1.168-.217c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5c.396 0 .762-.092 1.099-.254v1.698c-.433.15-.9.256-1.4.256-2.21 0-4-1.79-4-4s1.79-4 4-4c.465 0 .907.08 1.32.231l.414-.415A4.982 4.982 0 0110 4a5 5 0 015 5c0 .63-.114 1.23-.319 1.785l.414.414c.15-.413.235-.856.235-1.319a6 6 0 00-6-6c-1.383 0-2.653.473-3.666 1.259l.415.415z" /><path d="M12 10.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" /></svg>
+                            </div>
+                            <div class="flex justify-between items-end">
+                                <p id="current-equity" class="text-3xl font-bold mt-2">$0.00</p>
+                                <button onclick="promptAddFunds()" title="Tambah Saldo" class="text-gray-400 hover:text-white transition-colors duration-200 bg-gray-700/50 hover:bg-[var(--accent-cyan)]/20 hover:text-[var(--accent-cyan)] rounded-full p-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                        <div class="lg:col-span-3 panel rounded-xl p-6 flex flex-col animate-fade-in-up" style="animation-delay: 400ms;">
+                            <h2 class="text-lg font-semibold text-white mb-4">Kurva Ekuitas</h2>
+                            <div class="relative flex-grow h-80">
+                                <canvas id="equityCurveChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2 panel rounded-xl p-6 flex flex-col animate-fade-in-up" style="animation-delay: 500ms;">
+                            <h2 class="text-lg font-semibold text-white mb-4">Performa Strategi</h2>
+                            <div class="relative flex-grow h-80">
+                                <canvas id="strategyPerformanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trade Log View -->
+            <div id="log-view" class="hidden">
+                 <!-- Form to add new trade -->
+                 <div class="panel rounded-xl p-8 mb-8 animate-fade-in-up">
+                    <h2 class="text-2xl font-bold text-white mb-6">Tambah Trade Baru</h2>
+                    <form id="trade-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <input type="hidden" id="trade-id">
+                        <div>
+                            <label for="date" class="block text-sm font-medium text-gray-300">Tanggal</label>
+                            <input type="date" id="date" required class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
+                        </div>
+                        <div>
+                            <label for="session" class="block text-sm font-medium text-gray-300">Sesi Trading</label>
+                            <select id="session" required class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
+                                <option>Sesi Asia</option>
+                                <option>Sesi London</option>
+                                <option>Sesi New York</option>
+                                <option>Overlap LDN/NY</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="asset" class="block text-sm font-medium text-gray-300">Pair</label>
+                            <select id="asset" required class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
+                                <option>XAU/USD</option>
+                                <option>EUR/USD</option>
+                                <option>GBP/USD</option>
+                                <option>NASDAQ</option>
+                                <option>BTC/USD</option>
+                                <option>USD/JPY</option>
+                                <option>US500</option>
+                                <option>US30</option>
+                                <option>USOIL</option>
+                              <option>ETH/USD</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="strategy" class="block text-sm font-medium text-gray-300">Strategi</label>
+                            <input type="text" id="strategy" required class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
+                        </div>
+                        <div>
+                            <label for="position" class="block text-sm font-medium text-gray-300">Posisi</label>
+                            <select id="position" class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
+                                <option>Long</option>
+                                <option>Short</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="entry-price" class="block text-sm font-medium text-gray-300">Harga Entry</label>
+                            <input type="number" step="any" id="entry-price" required class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
+                        </div>
+                        <div>
+                            <label for="exit-price" class="block text-sm font-medium text-gray-300">Harga Exit</label>
+                            <input type="number" step="any" id="exit-price" required class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
+                        </div>
+                         <div>
+                            <label for="quantity" class="block text-sm font-medium text-gray-300">Kuantitas (Lot/Size)</label>
+                            <input type="number" step="any" id="quantity" required class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
+                        </div>
+                        <div class="lg:col-span-2">
+                            <label for="pnl" class="block text-sm font-medium text-gray-300">P/L ($)</label>
+                            <input type="number" step="any" id="pnl" required class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
+                        </div>
+                        <div class="lg:col-span-2">
+                            <label for="chart-image-input" class="block text-sm font-medium text-gray-300">Screenshot Chart</label>
+                            <div class="mt-1 flex items-center space-x-4">
+                                <button type="button" onclick="document.getElementById('chart-image-input').click()" class="px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-300 hover:bg-gray-700">Pilih Gambar</button>
+                                <input type="file" id="chart-image-input" class="hidden" accept="image/*">
+                                <div id="image-preview-container" class="w-16 h-10 bg-black/20 rounded border border-[var(--border-color)] hidden flex-shrink-0 relative">
+                                    <img id="image-preview" src="" class="w-full h-full object-cover rounded">
+                                    <button type="button" onclick="removeChartImage()" class="absolute -top-2 -right-2 bg-red-600/80 hover:bg-red-600 backdrop-blur-sm text-white rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold leading-none">&times;</button>
+                                </div>
+                                <span id="image-name" class="text-xs text-gray-400 truncate"></span>
+                            </div>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-4">
+                            <label for="notes" class="block text-sm font-medium text-gray-300">Catatan & Analisis</label>
+                            <textarea id="notes" rows="3" class="mt-1 hud-input block w-full rounded-md shadow-sm text-white"></textarea>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-4 flex items-center justify-end space-x-4">
+                            <button type="button" onclick="clearForm()" class="px-6 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-300 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Batal</button>
+                            <button type="submit" class="px-8 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[var(--accent-cyan)] hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent-cyan)] transition-opacity">Simpan Trade</button>
+                        </div>
+                    </form>
+                </div>
+                <div id="trade-log-container">
+                    <!-- Table populated by JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+    <div id="modal-container"></div>
+<script>
+    // --- GLOBAL STATE ---
+    let journals = {};
+    let currentJournalId = null;
+    let trades = [];
+    let startingEquity = 0;
+    let equityCurveChart;
+    let strategyPerformanceChart;
+    let form;
+    let tempChartImageBase64 = null;
+    let chartColors = { cyan: '#00BEFF', green: '#00FFB2', red: '#FF4D4D' }; // Fallback colors
+    const views = { dashboard: null, log: null };
+    const navButtons = { dashboard: null, log: null };
+    const dashboardElements = { totalPnl: null, winRate: null, totalTrades: null, currentEquity: null, mainDashboardContent: null };
+    let tradeLogContainer = null;
+    let modalContainer = null;
+    let currentJournalNameEl = null;
+    let journalSwitcherEl = null;
+  const assetType = {
+    "XAU/USD": "gold",
+    "EUR/USD": "forex",
+    "GBP/USD": "forex",
+    "USD/JPY": "forexJPY",
+
+    "NASDAQ": "index",
+    "S&P500": "index",
+    "US30": "index",
+
+    "USOIL": "oil",
+
+    "BTC/USD": "crypto",
+    "ETH/USD": "crypto"
+};
+
+    // --- DATA MANAGEMENT ---
+    function loadData() {
+    const journalsMeta = JSON.parse(localStorage.getItem('tradingJournals')) || null;
+
+    if (journalsMeta && Object.keys(journalsMeta.allJournals).length > 0) {
+        journals = journalsMeta;
+        currentJournalId = journals.currentJournalId;
+    } else {
+        const firstJournalId = `j_${Date.now()}`;
+        journals = {
+            allJournals: { [firstJournalId]: { name: "Jurnal Utama", type: 'standard' } },
+            currentJournalId: firstJournalId
+        };
+        localStorage.setItem('tradingJournals', JSON.stringify(journals));
+        localStorage.setItem(`journal_${firstJournalId}`, JSON.stringify({ startingEquity: 0, trades: [] }));
+        currentJournalId = firstJournalId;
+    }
+
+    // ❗ FIX: selalu load data sesuai jurnal yang aktif
+    const stored = JSON.parse(localStorage.getItem(`journal_${currentJournalId}`));
+    startingEquity = stored?.startingEquity || 0;
+    trades = stored?.trades || [];
+    trades.sort((a, b) => a.timestamp - b.timestamp);
+}
+    function saveData() {
+    // ❗ FIX: simpan state HANYA untuk jurnal aktif
+    localStorage.setItem(`journal_${currentJournalId}`, JSON.stringify({
+        startingEquity,
+        trades
+    }));
+    localStorage.setItem('tradingJournals', JSON.stringify(journals));
+}
+
+    // --- JOURNAL MANAGEMENT ---
+    function switchJournal(journalId) {
+    if (journalId === currentJournalId) return;
+
+    // Set jurnal baru
+    currentJournalId = journalId;
+    journals.currentJournalId = journalId;
+    localStorage.setItem('tradingJournals', JSON.stringify(journals));
+
+    // ❗ FIX: load ulang data jurnal baru, bukan memakai data lama
+    const stored = JSON.parse(localStorage.getItem(`journal_${journalId}`)) || { startingEquity: 0, trades: [] };
+    startingEquity = stored.startingEquity;
+    trades = stored.trades;
+    trades.sort((a, b) => a.timestamp - b.timestamp);
+
+    // Refresh UI
+    renderJournalSwitcher();
+    renderTradeLog();
+    updateDashboard();
+}
+    function createJournal(name, type) {
+    if (!name.trim()) return;
+    const newId = `j_${Date.now()}`;
+    journals.allJournals[newId] = { name: name.trim(), type: type };
+
+    // ❗ FIX: pastikan jurnal baru benar-benar memiliki state baru
+    localStorage.setItem(`journal_${newId}`, JSON.stringify({
+        startingEquity: 0,
+        trades: []
+    }));
+
+    switchJournal(newId);
+    closeModal();
+}
+    function renameJournal(journalId, newName) {
+        if (!newName.trim()) return;
+        journals.allJournals[journalId].name = newName.trim();
+        saveData();
+        renderJournalSwitcher();
+        renderManageJournalModal();
+    }
+    function deleteJournal(journalId) {
+        if (Object.keys(journals.allJournals).length <= 1) return;
+        delete journals.allJournals[journalId];
+        localStorage.removeItem(`journal_${journalId}`);
+        if (currentJournalId === journalId) {
+            currentJournalId = Object.keys(journals.allJournals)[0];
+            journals.currentJournalId = currentJournalId;
+        }
+        saveData();
+        loadData();
+        renderJournalSwitcher();
+        updateDashboard();
+        renderTradeLog();
+        renderManageJournalModal();
+    }
+    
+    // --- UI & RENDERING ---
+    function switchView(viewName) {
+        Object.values(views).forEach(v => v.classList.add('hidden'));
+        views[viewName]?.classList.remove('hidden');
+        Object.values(navButtons).forEach(b => b.classList.remove('nav-active'));
+        navButtons[viewName]?.classList.add('nav-active');
+        if(viewName === 'dashboard') updateDashboard();
+    }
+    
+    function removeChartImage() {
+        document.getElementById('image-preview-container').classList.add('hidden');
+        document.getElementById('image-preview').src = '';
+        document.getElementById('image-name').textContent = '';
+        document.getElementById('chart-image-input').value = '';
+        tempChartImageBase64 = null;
+    }
+
+    function clearForm() {
+        form.reset();
+        document.getElementById('trade-id').value = '';
+        document.getElementById('date').valueAsDate = new Date();
+        removeChartImage();
+    }
+
+    // --- MODALS ---
+    function showModal(content) {
+        modalContainer.innerHTML = `<div id="modal-overlay" class="modal-overlay"><div class="modal-content">${content}</div></div>`;
+        setTimeout(() => {
+            const modalOverlay = document.getElementById('modal-overlay');
+            if (modalOverlay) {
+                modalOverlay.classList.add('visible');
+                modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+            }
+        }, 10);
+    }
+    function closeModal() {
+        const modalOverlay = document.getElementById('modal-overlay');
+        if (modalOverlay) {
+            modalOverlay.classList.remove('visible');
+            setTimeout(() => modalContainer.innerHTML = '', 300);
+        }
+    }
+    function promptAddFunds() {
+        const content = `<h2 class="text-xl font-bold text-white mb-4">Tambah Saldo (Deposit)</h2><p class="text-gray-300 mb-6">Masukkan jumlah dana yang ingin Anda tambahkan.</p><div><label for="deposit-amount" class="sr-only">Jumlah Deposit ($)</label><div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="text-gray-400 sm:text-sm">$</span></div><input type="number" id="deposit-amount" class="hud-input block w-full rounded-md shadow-sm pl-7 pr-4" placeholder="1000"></div></div><div class="flex justify-end space-x-4 mt-6"><button onclick="closeModal()" class="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">Batal</button><button onclick="confirmAddFunds()" class="px-4 py-2 bg-[var(--accent-cyan)] text-[var(--bg-primary)] font-semibold rounded-md text-sm hover:opacity-90">Tambah Dana</button></div>`;
+        showModal(content);
+        setTimeout(() => document.getElementById('deposit-amount').focus(), 100);
+    }
+    function confirmAddFunds() {
+        const amountInput = document.getElementById('deposit-amount');
+        const amount = parseFloat(amountInput.value);
+        if (isNaN(amount) || amount <= 0) {
+            amountInput.classList.add('border-red-500', 'ring-red-500'); return;
+        }
+        const depositData = { id: `d_${Date.now()}`, timestamp: Date.now(), type: 'deposit', amount: amount, date: new Date().toISOString().split('T')[0] };
+        trades.push(depositData);
+        trades.sort((a, b) => a.timestamp - b.timestamp);
+        saveData();
+        updateDashboard();
+        closeModal();
+    }
+    function promptResetData() {
+        const currentJournal = journals.allJournals[currentJournalId];
+        const content = `<h2 class="text-xl font-bold text-white mb-4">Reset Jurnal Ini?</h2><p class="text-gray-300 mb-6">Anda akan menghapus semua data trade dan saldo untuk jurnal <strong class="text-[var(--accent-cyan)]">${currentJournal.name}</strong>. Tindakan ini tidak dapat dibatalkan.</p><div class="flex justify-end space-x-4"><button onclick="closeModal()" class="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">Batal</button><button onclick="confirmResetData()" class="px-4 py-2 bg-[var(--accent-red)] text-white rounded-md text-sm font-medium hover:opacity-90">Ya, Reset Jurnal Ini</button></div>`;
+        showModal(content);
+    }
+    function confirmResetData() {
+        trades = [];
+        startingEquity = 0;
+        saveData();
+        renderTradeLog();
+        updateDashboard();
+        closeModal();
+    }
+    function renderManageJournalModal() {
+        let journalListHtml = '';
+        for (const [id, journal] of Object.entries(journals.allJournals)) {
+            const typeBadge = journal.type === 'cent' 
+                ? `<span class="ml-2 text-xs font-semibold bg-purple-600 text-white px-2 py-0.5 rounded-full">Cent</span>`
+                : `<span class="ml-2 text-xs font-semibold bg-blue-600 text-white px-2 py-0.5 rounded-full">Standard</span>`;
+            journalListHtml += `<div class="flex items-center justify-between p-3 bg-black/20 rounded-lg mb-2"><div class="flex items-center"><input id="rename-${id}" type="text" value="${journal.name}" class="bg-transparent text-white focus:outline-none w-full">${typeBadge}</div><div class="flex items-center space-x-2 ml-4 flex-shrink-0"><button onclick="renameJournal('${id}', document.getElementById('rename-${id}').value)" class="text-blue-400 hover:text-blue-300">Simpan</button><button onclick="deleteJournal('${id}')" class="text-red-400 hover:text-red-300">Hapus</button></div></div>`;
+        }
+        const content = `<h2 class="text-xl font-bold text-white mb-6">Kelola Jurnal</h2><div class="max-h-64 overflow-y-auto pr-2">${journalListHtml}</div><div class="flex justify-end mt-6"><button onclick="closeModal()" class="px-6 py-2 bg-[var(--accent-cyan)] text-[var(--bg-primary)] font-semibold rounded-md text-sm hover:opacity-90">Tutup</button></div>`;
+        showModal(content);
+    }
+    function promptCreateJournal() {
+        const content = `<h2 class="text-xl font-bold text-white mb-4">Buat Jurnal Baru</h2><div class="space-y-4"><div><label for="new-journal-name" class="block text-sm font-medium text-gray-300">Nama Jurnal</label><input type="text" id="new-journal-name" class="mt-1 hud-input block w-full rounded-md" placeholder="Contoh: Akun Kedua"></div><div><label for="new-journal-type" class="block text-sm font-medium text-gray-300">Tipe Akun</label><select id="new-journal-type" class="mt-1 hud-input block w-full rounded-md"><option value="standard">Standard</option><option value="cent">Cent</option></select></div></div><div class="flex justify-end space-x-4 mt-6"><button onclick="closeModal()" class="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">Batal</button><button onclick="createJournal(document.getElementById('new-journal-name').value, document.getElementById('new-journal-type').value)" class="px-4 py-2 bg-[var(--accent-cyan)] text-[var(--bg-primary)] font-semibold rounded-md text-sm hover:opacity-90">Buat Jurnal</button></div>`;
+        showModal(content);
+        setTimeout(() => document.getElementById('new-journal-name').focus(), 100);
+    }
+    function promptLotCalculator() {
+        let currentEquity = startingEquity;
+        trades.forEach(item => { item.type === 'deposit' ? currentEquity += item.amount : item.type === 'trade' ? currentEquity += item.pnl : null; });
+        const accountType = journals.allJournals[currentJournalId].type;
+        const typeLabel = accountType === 'cent' ? 'Cent Lot' : 'Standard Lot';
+        const content = `<h2 class="text-xl font-bold text-white mb-4">Kalkulator Lot Size</h2><p class="text-gray-400 mb-6">Hitung ukuran posisi untuk akun <strong class="${accountType === 'cent' ? 'text-purple-400' : 'text-blue-400'}">${accountType}</strong> Anda.</p><div class="space-y-4"><div><label for="lc-balance" class="block text-sm font-medium text-gray-300">Saldo Akun ($)</label><input onkeyup="calculateLotSize()" type="number" id="lc-balance" value="${currentEquity.toFixed(2)}" class="mt-1 hud-input block w-full rounded-md"></div><div><label for="lc-risk" class="block text-sm font-medium text-gray-300">Risiko (%)</label><input onkeyup="calculateLotSize()" type="number" id="lc-risk" value="1" class="mt-1 hud-input block w-full rounded-md"></div><div><label for="lc-pair" class="block text-sm font-medium text-gray-300">Pair</label><select onchange="calculateLotSize()" id="lc-pair" class="mt-1 hud-input block w-full rounded-md"><option>XAU/USD</option><option>EUR/USD</option><option>GBP/USD</option><option>NASDAQ</option><option>BTC/USD</option></select></div><div><label for="lc-sl" class="block text-sm font-medium text-gray-300">Jarak Stop Loss</label><div class="mt-1 flex rounded-md shadow-sm"><input onkeyup="calculateLotSize()" type="number" id="lc-sl" placeholder="Contoh: 20" class="hud-input block w-full rounded-none rounded-l-md"><select onchange="calculateLotSize()" id="lc-unit" class="hud-input block w-auto rounded-l-none rounded-r-md border-l-0 bg-gray-900/50"><option value="pips">Pips</option><option value="points">Points</option></select></div></div></div><div class="mt-8 bg-black/20 p-6 rounded-lg text-center border border-[var(--border-color)]"><p class="text-sm font-medium text-gray-400 uppercase">Ukuran Posisi (${typeLabel})</p><p id="lc-result" class="text-3xl font-bold text-[var(--accent-cyan)] mt-2">0.00</p></div><div class="flex justify-end mt-6"><button onclick="closeModal()" class="px-6 py-2 bg-[var(--accent-cyan)] text-[var(--bg-primary)] font-semibold rounded-md text-sm hover:opacity-90">Tutup</button></div>`;
+        showModal(content);
+        calculateLotSize();
+    }
+    function calculateLotSize() {
+        const balance = parseFloat(document.getElementById('lc-balance').value) || 0;
+        const riskPercent = parseFloat(document.getElementById('lc-risk').value) || 0;
+        const stopLossDistance = parseFloat(document.getElementById('lc-sl').value) || 0;
+        const unit = document.getElementById('lc-unit').value;
+        const pair = document.getElementById('lc-pair').value;
+        const resultEl = document.getElementById('lc-result');
+        const accountType = journals.allJournals[currentJournalId].type;
+        if (balance <= 0 || riskPercent <= 0 || stopLossDistance <= 0) { resultEl.textContent = '0.00'; return; }
+        const riskAmount = balance * (riskPercent / 100);
+        
+        let valuePerUnitPerLot = 1; // Default for points on all pairs, and pips on Indices/Crypto
+        if (unit === 'pips') {
+            if (['EUR/USD', 'GBP/USD', 'XAU/USD'].includes(pair)) {
+                valuePerUnitPerLot = 10; // $10 per pip for these pairs on a standard lot
+            }
+        }
+        
+        const stopLossInCurrency = stopLossDistance * valuePerUnitPerLot;
+        let lotSize = 0;
+        if (stopLossInCurrency > 0) {
+            lotSize = riskAmount / stopLossInCurrency;
+        }
+        
+        if (accountType === 'cent') {
+            lotSize *= 100;
+        }
+        resultEl.textContent = lotSize.toFixed(2);
+    }
+
+    // --- CORE LOGIC & CALCULATIONS ---
+    function calculatePnl() {
+    const entry = parseFloat(document.getElementById('entry-price').value),
+          exit = parseFloat(document.getElementById('exit-price').value),
+          qty = parseFloat(document.getElementById('quantity').value),
+          position = document.getElementById('position').value,
+          asset = document.getElementById('asset').value,
+          pnlInput = document.getElementById('pnl');
+
+    if (isNaN(entry) || isNaN(exit) || isNaN(qty)) {
+        pnlInput.value = '';
+        return;
+    }
+
+    const pnl = calculatePnL(asset, entry, exit, qty, position);
+    pnlInput.value = pnl.toFixed(2);
+}
+    function handleFormSubmit(e) {
+        e.preventDefault();
+        const tradeId = document.getElementById('trade-id').value, pnl = parseFloat(document.getElementById('pnl').value);
+        let status = 'Breakeven'; if (pnl > 0) status = 'Win'; if (pnl < 0) status = 'Loss';
+        const existingTrade = tradeId ? trades.find(t => t.id === tradeId) : null;
+        const tradeData = { 
+            id: tradeId ? tradeId : `t_${Date.now()}`, 
+            type: 'trade', 
+            timestamp: existingTrade ? existingTrade.timestamp : Date.now(), 
+            date: document.getElementById('date').value, 
+            session: document.getElementById('session').value, 
+            asset: document.getElementById('asset').value, 
+            strategy: document.getElementById('strategy').value, 
+            position: document.getElementById('position').value, 
+            entryPrice: parseFloat(document.getElementById('entry-price').value), 
+            exitPrice: parseFloat(document.getElementById('exit-price').value), 
+            quantity: parseFloat(document.getElementById('quantity').value), 
+            pnl: pnl, 
+            status: status, 
+            notes: document.getElementById('notes').value,
+            chartImage: tempChartImageBase64 || (existingTrade ? existingTrade.chartImage : null)
+        };
+        if (tradeId) trades[trades.findIndex(t => t.id === tradeId)] = tradeData; else trades.push(tradeData);
+        trades.sort((a, b) => a.timestamp - b.timestamp);
+        saveData();
+        renderTradeLog(true);
+        clearForm();
+        updateDashboard();
+    }
+    function editTrade(id) {
+        const trade = trades.find(t => t.id === id);
+        if (trade) {
+            document.getElementById('trade-id').value = trade.id;
+            document.getElementById('date').value = trade.date;
+            document.getElementById('session').value = trade.session;
+            document.getElementById('asset').value = trade.asset;
+            document.getElementById('strategy').value = trade.strategy;
+            document.getElementById('position').value = trade.position;
+            document.getElementById('entry-price').value = trade.entryPrice;
+            document.getElementById('exit-price').value = trade.exitPrice;
+            document.getElementById('quantity').value = trade.quantity;
+            document.getElementById('pnl').value = trade.pnl;
+            document.getElementById('notes').value = trade.notes;
+
+            // Handle image preview for editing
+            tempChartImageBase64 = trade.chartImage;
+            if (trade.chartImage) {
+                document.getElementById('image-preview').src = trade.chartImage;
+                document.getElementById('image-preview-container').classList.remove('hidden');
+                document.getElementById('image-name').textContent = 'Gambar tersimpan';
+            } else {
+                document.getElementById('image-preview-container').classList.add('hidden');
+                document.getElementById('image-preview').src = '';
+                document.getElementById('image-name').textContent = '';
+            }
+
+            switchView('log');
+            window.scrollTo(0, 0);
+        }
+    }
+    function deleteTrade(id) {
+        const tradeToDelete = trades.find(t => t.id === id);
+        if (!tradeToDelete) return;
+        const content = `<h2 class="text-xl font-bold text-white mb-4">Konfirmasi Hapus</h2><p class="text-gray-300 mb-6">Anda yakin ingin menghapus trade untuk <strong>${tradeToDelete.asset}</strong>?</p><div class="flex justify-end space-x-4"><button onclick="closeModal()" class="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">Batal</button><button onclick="confirmDelete('${id}')" class="px-4 py-2 bg-[var(--accent-red)] text-white rounded-md text-sm font-medium hover:opacity-90">Ya, Hapus</button></div>`;
+        showModal(content);
+    }
+    function confirmDelete(id) {
+        trades = trades.filter(t => t.id !== id);
+        saveData();
+        renderTradeLog();
+        updateDashboard();
+        closeModal();
+    }
+    function openModal(id) {
+        const trade = trades.find(t => t.id === id);
+        if (!trade) return;
+        const pnlClass = trade.status === 'Win' ? 'text-[var(--accent-green)]' : trade.status === 'Loss' ? 'text-[var(--accent-red)]' : 'text-gray-400';
+        const statusClass = trade.status === 'Win' ? 'bg-green-900/50 text-green-300' : trade.status === 'Loss' ? 'bg-red-900/50 text-red-300' : 'bg-gray-700/50 text-gray-300';
+        let chartImageHtml = '';
+        if (trade.chartImage) {
+            chartImageHtml = `<div class="mt-6"><p class="text-sm text-gray-400 uppercase font-semibold mb-2">Screenshot Chart</p><img src="${trade.chartImage}" alt="Chart Screenshot" class="w-full rounded-lg border border-[var(--border-color)]"></div>`;
+        }
+        const content = `<div class="flex justify-between items-start"><h2 class="text-2xl font-bold text-white mb-2">${trade.asset} <span class="text-base font-medium text-gray-400 ml-2">${trade.strategy}</span></h2><button onclick="closeModal()" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button></div><p class="text-sm text-gray-500 mb-6">${new Date(trade.date).toLocaleDateString('id-ID',{timeZone:'UTC',year:'numeric',month:'long',day:'numeric'})}</p><div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6"><div><p class="text-xs text-gray-400 uppercase">Posisi</p><p class="font-semibold">${trade.position}</p></div><div><p class="text-xs text-gray-400 uppercase">Sesi</p><p class="font-semibold">${trade.session}</p></div><div><p class="text-xs text-gray-400 uppercase">Status</p><p><span class="px-3 py-1 text-xs leading-5 font-semibold rounded-full ${statusClass}">${trade.status}</span></p></div><div><p class="text-xs text-gray-400 uppercase">P/L ($)</p><p class="font-bold text-lg ${pnlClass}">$${trade.pnl.toFixed(2)}</p></div><div><p class="text-xs text-gray-400 uppercase">Entry</p><p class="font-semibold">${trade.entryPrice}</p></div><div><p class="text-xs text-gray-400 uppercase">Exit</p><p class="font-semibold">${trade.exitPrice}</p></div><div><p class="text-xs text-gray-400 uppercase">Kuantitas</p><p class="font-semibold">${trade.quantity}</p></div></div><div><p class="text-sm text-gray-400 uppercase font-semibold mb-2">Catatan & Analisis</p><div class="bg-black/20 p-4 rounded-lg text-gray-300 whitespace-pre-wrap max-h-40 overflow-y-auto">${trade.notes||"Tidak ada catatan."}</div></div>${chartImageHtml}`;
+        showModal(content);
+    }
+    function generateAvatar(asset) {
+        const letter = asset ? asset.charAt(0).toUpperCase() : "?";
+        const colors = ['bg-pink-600', 'bg-purple-600', 'bg-indigo-600', 'bg-blue-600', 'bg-teal-500', 'bg-green-500', 'bg-yellow-500', 'bg-orange-500', 'bg-red-600'];
+        let hash = 0;
+        if (asset) { for (let i = 0; i < asset.length; i++) { const char = asset.charCodeAt(i); hash = ((hash << 5) - hash) + char; hash = hash & hash; } }
+        const color = colors[Math.abs(hash % colors.length)];
+        return `<div class="w-10 h-10 rounded-full ${color} flex-shrink-0 flex items-center justify-center mr-4"><span class="text-sm font-bold text-white tracking-wider">${letter}</span></div>`
+    }
+    function renderTradeLog(isNew = false) {
+        const actualTrades = trades.filter(item => item.type !== 'deposit');
+        let content = '';
+        if (actualTrades.length === 0) {
+            content = `<div class="panel rounded-xl text-center py-20 text-gray-500"><svg class="mx-auto h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><h3 class="mt-4 text-sm font-medium text-white">Jurnal Masih Kosong</h3><p class="mt-1 text-sm text-gray-400">Catat trade pertama Anda untuk memulai analisis.</p></div>`;
+        } else {
+            const reversedTrades = actualTrades.slice().reverse();
+            const tradeRows = reversedTrades.map((trade, index) => {
+                const pnlClass = trade.status === 'Win' ? "text-[var(--accent-green)]" : trade.status === 'Loss' ? "text-[var(--accent-red)]" : "text-gray-400";
+                const indicatorColor = trade.status === 'Win' ? "border-[var(--accent-green)]" : trade.status === 'Loss' ? "border-[var(--accent-red)]" : "border-gray-500";
+                const avatar = generateAvatar(trade.asset);
+                const animationClass = (isNew && index === 0) ? 'new-trade-animation' : '';
+                return `<div class="block md:table-row bg-black/20 rounded-lg mb-4 md:mb-0 md:border-b md:border-gray-800 hover:bg-black/40 transition duration-200 border-l-4 ${indicatorColor} ${animationClass}"><div class="p-4 md:px-6 md:py-4 whitespace-nowrap text-sm font-semibold text-white flex items-center">${avatar}<div> <span class="font-bold text-base">${trade.asset}</span> <span class="block text-xs text-gray-400 font-normal">${trade.strategy}</span></div></div><div class="px-4 pb-2 md:p-0 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-300 flex items-center justify-between md:table-cell"><span class="font-bold text-gray-400 md:hidden mr-2">Posisi</span><span>${trade.position}</span></div><div class="px-4 pb-2 md:p-0 md:px-6 md:py-4 whitespace-nowrap text-lg font-bold ${pnlClass} flex items-center justify-between md:table-cell md:text-sm"><span class="font-bold text-gray-400 text-sm md:hidden mr-2">P/L ($)</span><span>${trade.pnl > 0 ? "+" : ""}${trade.pnl.toFixed(2)}</span></div><div class="px-4 pb-2 md:p-0 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-400 flex items-center justify-between md:table-cell"><span class="font-bold text-gray-400 md:hidden mr-2">Sesi</span><span>${trade.session}</span></div><div class="px-4 pb-2 md:p-0 md:px-6 md:py-4 whitespace-nowrap text-sm text-gray-400 flex items-center justify-between md:table-cell"><span class="font-bold text-gray-400 md:hidden mr-2">Tanggal</span><span>${new Date(trade.date).toLocaleDateString("id-ID",{timeZone:"UTC"})}</span></div><div class="p-4 md:px-6 md:py-4 whitespace-nowrap text-right text-sm font-medium"><button onclick="openModal('${trade.id}')" class="text-gray-400 hover:text-white mr-3">Lihat</button><button onclick="editTrade('${trade.id}')" class="text-blue-400 hover:text-blue-300 mr-3">Edit</button><button onclick="deleteTrade('${trade.id}')" class="text-red-400 hover:text-red-300">Hapus</button></div></div>`;
+            }).join('');
+            content = `<div class="panel rounded-xl overflow-hidden"><div class="p-6"><h2 class="text-2xl font-bold text-white">Riwayat Trade</h2><p class="text-[var(--text-secondary)] mt-1">Daftar semua trade yang telah Anda catat.</p></div><div><div class="md:table min-w-full md:divide-y md:divide-gray-800"><div class="hidden md:table-header-group bg-black/30"><div class="md:table-row"><div class="md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Aset / Strategi</div><div class="md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Posisi</div><div class="md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">P/L ($)</div><div class="md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Sesi</div><div class="md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tanggal</div><div class="md:table-cell px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">Aksi</div></div></div><div class="md:table-row-group p-4 md:p-0">${tradeRows}</div></div></div></div>`;
+        }
+        tradeLogContainer.innerHTML = content;
+    }
+    function updateDashboard() {
+        let totalPnl = 0, totalWins = 0, actualTradeCount = 0;
+        const equityData = [startingEquity], strategyPerformance = {};
+        let runningBalance = startingEquity;
+        const chartLabels = ['Start'], eventTypes = ['start'];
+        trades.forEach(item => {
+            if (item.type === 'deposit') {
+                runningBalance += item.amount;
+                chartLabels.push('Deposit');
+                eventTypes.push('deposit');
+            } else {
+                runningBalance += item.pnl;
+                totalPnl += item.pnl;
+                actualTradeCount++;
+                chartLabels.push(`Trade ${actualTradeCount}`);
+                eventTypes.push(item.status);
+                if (item.status === 'Win') totalWins++;
+                if (item.strategy) {
+                    if (!strategyPerformance[item.strategy]) strategyPerformance[item.strategy] = { win: 0, loss: 0 };
+                    item.status === 'Win' ? strategyPerformance[item.strategy].win++ : item.status === 'Loss' ? strategyPerformance[item.strategy].loss++ : null;
+                }
+            }
+            equityData.push(runningBalance);
+        });
+        const winRate = actualTradeCount > 0 ? (totalWins / actualTradeCount) * 100 : 0;
+        dashboardElements.totalPnl.textContent = `$${totalPnl.toFixed(2)}`;
+        dashboardElements.totalPnl.className = `text-3xl font-bold mt-2 ${totalPnl > 0 ? "text-[var(--accent-green)]" : totalPnl < 0 ? "text-[var(--accent-red)]" : ""}`;
+        dashboardElements.winRate.textContent = `${winRate.toFixed(1)}%`;
+        dashboardElements.totalTrades.textContent = actualTradeCount;
+        dashboardElements.currentEquity.textContent = `$${runningBalance.toFixed(2)}`;
+        renderEquityCurveChart(equityData, chartLabels, eventTypes);
+        renderStrategyPerformanceChart(strategyPerformance);
+    }
+    function renderEquityCurveChart(equityData, chartLabels, eventTypes) {
+        const ctx = document.getElementById('equityCurveChart').getContext('2d');
+        if (equityCurveChart) equityCurveChart.destroy();
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, "rgba(0, 190, 255, 0.4)");
+        gradient.addColorStop(1, "rgba(0, 190, 255, 0)");
+        equityCurveChart = new Chart(ctx, { type: "line", data: { labels: chartLabels, datasets: [{ label: "Equity ($)", data: equityData, backgroundColor: gradient, borderWidth: 2.5, pointRadius: 0, tension: .4, fill: !0, segment: { borderColor: ctx => { const eventType = eventTypes[ctx.p1DataIndex] || "start"; return "deposit" === eventType ? chartColors.green : "Loss" === eventType ? chartColors.red : chartColors.cyan } } }] }, options: { responsive: !0, maintainAspectRatio: !1, scales: { y: { beginAtZero: !1, grid: { color: "rgba(255, 255, 255, 0.1)" }, ticks: { color: "#9ca3af" } }, x: { grid: { display: !1 }, ticks: { display: !1 } } }, plugins: { legend: { display: !1 } } } });
+    }
+    function renderStrategyPerformanceChart(strategyData) {
+        const ctx = document.getElementById('strategyPerformanceChart').getContext('2d');
+        if (strategyPerformanceChart) strategyPerformanceChart.destroy();
+        const labels = Object.keys(strategyData);
+        const winData = labels.map(label => strategyData[label].win);
+        const lossData = labels.map(label => strategyData[label].loss);
+        strategyPerformanceChart = new Chart(ctx, { type: "bar", data: { labels: labels, datasets: [{ label: "Win", data: winData, backgroundColor: "rgba(0, 255, 178, 0.7)" }, { label: "Loss", data: lossData, backgroundColor: "rgba(255, 77, 77, 0.7)" }] }, options: { responsive: !0, maintainAspectRatio: !1, indexAxis: "y", scales: { y: { stacked: !0, grid: { display: !1 }, ticks: { color: "#9ca3af" } }, x: { stacked: !0, grid: { color: "rgba(255, 255, 255, 0.1)" }, ticks: { color: "#9ca3af" } } }, plugins: { legend: { position: "bottom", labels: { color: "#9ca3af" } } } } });
+    }
+    function renderJournalSwitcher() {
+        const currentJournal = journals.allJournals[currentJournalId];
+        currentJournalNameEl.textContent = currentJournal.name;
+        let switcherHtml = '';
+        for (const [id, journal] of Object.entries(journals.allJournals)) {
+            if (id !== currentJournalId) {
+                switcherHtml += `<a href="#" onclick="event.preventDefault(); switchJournal('${id}')">${journal.name}</a>`;
+            }
+        }
+        switcherHtml += `<hr class="border-gray-600 my-1">`;
+        switcherHtml += `<a href="#" onclick="event.preventDefault(); promptCreateJournal()"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>Buat Jurnal Baru</a>`;
+        switcherHtml += `<a href="#" onclick="event.preventDefault(); renderManageJournalModal()"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" /></svg>Kelola Jurnal...</a>`;
+        journalSwitcherEl.innerHTML = switcherHtml;
+    }
+
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+        Object.assign(views, { dashboard: document.getElementById('dashboard-view'), log: document.getElementById('log-view') });
+        Object.assign(navButtons, { dashboard: document.getElementById('nav-dashboard'), log: document.getElementById('nav-log') });
+        Object.assign(dashboardElements, { totalPnl: document.getElementById('total-pnl'), winRate: document.getElementById('win-rate'), totalTrades: document.getElementById('total-trades'), currentEquity: document.getElementById('current-equity'), mainDashboardContent: document.getElementById('main-dashboard-content') });
+        form = document.getElementById('trade-form');
+        tradeLogContainer = document.getElementById('trade-log-container');
+        modalContainer = document.getElementById('modal-container');
+        currentJournalNameEl = document.getElementById('current-journal-name');
+        journalSwitcherEl = document.getElementById('journal-switcher');
+        
+        const computedStyles = getComputedStyle(document.documentElement);
+        chartColors.cyan = computedStyles.getPropertyValue('--accent-cyan').trim() || '#00BEFF';
+        chartColors.green = computedStyles.getPropertyValue('--accent-green').trim() || '#00FFB2';
+        chartColors.red = computedStyles.getPropertyValue('--accent-red').trim() || '#FF4D4D';
+        
+        form.addEventListener('submit', handleFormSubmit);
+        document.getElementById('date').valueAsDate = new Date();
+        
+        const pnlFields = ['entry-price', 'exit-price', 'quantity', 'position', 'asset'];
+        pnlFields.forEach(id => document.getElementById(id).addEventListener('input', calculatePnl));
+
+        document.getElementById('chart-image-input').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    tempChartImageBase64 = e.target.result;
+                    document.getElementById('image-preview').src = tempChartImageBase64;
+                    document.getElementById('image-preview-container').classList.remove('hidden');
+                    document.getElementById('image-name').textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        loadData();
+        renderJournalSwitcher();
+        renderTradeLog();
+        updateDashboard();
+        switchView('dashboard');
+    });
+</script>
+</body>
+</html>
+
+
+
+
+
+
