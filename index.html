@@ -545,34 +545,29 @@
         calculateLotSize();
     }
     function calculateLotSize() {
-        const balance = parseFloat(document.getElementById('lc-balance').value) || 0;
-        const riskPercent = parseFloat(document.getElementById('lc-risk').value) || 0;
-        const stopLossDistance = parseFloat(document.getElementById('lc-sl').value) || 0;
-        const unit = document.getElementById('lc-unit').value;
-        const pair = document.getElementById('lc-pair').value;
-        const resultEl = document.getElementById('lc-result');
-        const accountType = journals.allJournals[currentJournalId].type;
-        if (balance <= 0 || riskPercent <= 0 || stopLossDistance <= 0) { resultEl.textContent = '0.00'; return; }
-        const riskAmount = balance * (riskPercent / 100);
-        
-        let valuePerUnitPerLot = 1; // Default for points on all pairs, and pips on Indices/Crypto
-        if (unit === 'pips') {
-            if (['EUR/USD', 'GBP/USD', 'XAU/USD'].includes(pair)) {
-                valuePerUnitPerLot = 10; // $10 per pip for these pairs on a standard lot
-            }
-        }
-        
-        const stopLossInCurrency = stopLossDistance * valuePerUnitPerLot;
-        let lotSize = 0;
-        if (stopLossInCurrency > 0) {
-            lotSize = riskAmount / stopLossInCurrency;
-        }
-        
-        if (accountType === 'cent') {
-            lotSize *= 100;
-        }
-        resultEl.textContent = lotSize.toFixed(2);
+    const balance = parseFloat(document.getElementById('lc-balance').value) || 0;
+    const riskPercent = parseFloat(document.getElementById('lc-risk').value) || 0;
+    const stopLossDistance = parseFloat(document.getElementById('lc-sl').value) || 0;
+    const contractSize = parseFloat(document.getElementById('lc-contract').value) || 0; 
+    const unit = document.getElementById('lc-unit').value;
+    const resultEl = document.getElementById('lc-result');
+
+    if (balance <= 0 || riskPercent <= 0 || stopLossDistance <= 0 || contractSize <= 0) { 
+        resultEl.textContent = '0.00';
+        return; 
     }
+
+    const riskAmount = balance * (riskPercent / 100);
+
+    let stopValue = stopLossDistance;
+    if (unit === 'pips') {
+        stopValue = stopLossDistance * 0.0001; 
+    }
+
+    const lotSize = riskAmount / (stopValue * contractSize);
+    resultEl.textContent = lotSize.toFixed(3);
+}
+
 
     // --- CORE LOGIC & CALCULATIONS ---
     function calculatePnl() {
