@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jurnal Trading By MaulLKod</title>
+    <title>Jurnal Trading By MaulKod</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -244,7 +244,7 @@
                         </div>
                         <div>
                             <label for="session" class="block text-sm font-medium text-gray-300">Time</label>
-                            <select id="session" multiple.select class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
+                            <select id="session" multiple size = "1" class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
                                 <option>Sesi Asia</option>
                                 <option>Sesi London</option>
                                 <option>Sesi New York</option>
@@ -798,6 +798,7 @@
         switcherHtml += `<a href="#" onclick="event.preventDefault(); renderManageJournalModal()"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" /></svg>Kelola Jurnal...</a>`;
         journalSwitcherEl.innerHTML = switcherHtml;
     }
+    
 
     // --- INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', () => {
@@ -840,6 +841,17 @@
         renderTradeLog();
         updateDashboard();
         switchView('dashboard');
+
+         const sessionSelect = document.getElementById("session");
+        sessionSelect.addEventListener("mousedown", function (e) {
+            e.preventDefault();
+
+            const option = e.target;
+            if (option.tagName === "OPTION") {
+                option.selected = !option.selected;
+            }
+            return false;
+        });
     });
 </script>
 </body>
