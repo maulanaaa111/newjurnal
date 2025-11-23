@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jurnal Trading By MaulKod</title>
+    <title>Jurnal Trading By MaulLKod</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -243,37 +243,20 @@
                             <input type="date" id="date" required class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-300">Time</label>
-                            <button type="button" id="session-display"
-                            onclick="openSessionPicker()"
-                            class="mt-1 hud-input block w-full text-left rounded-md shadow-sm text-white">
-                            Pilih sesi...
-                        </button>
-                        
-                        <input type="hidden" id="session">
-
-                        <div id="session-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-                                <div class="bg-gray-900 p-4 rounded-lg w-72">
-                                    <h3 class="text-white text-lg mb-3">Pilih Sesi</h3>
-                                    <div class="space-y-2 text-white">
-                                        <label><input type="checkbox" class="session-opt" value="Sesi Asia"> Sesi Asia</label><br>
-                                        <label><input type="checkbox" class="session-opt" value="Sesi London"> Sesi London</label><br>
-                                        <label><input type="checkbox" class="session-opt" value="Sesi New York"> Sesi New York</label><br>
-                                        <label><input type="checkbox" class="session-opt" value="Overlap LDN/NY"> Overlap LDN/NY</label><br>
-                                        <label><input type="checkbox" class="session-opt" value="SB London"> SB London</label><br>
-                                        <label><input type="checkbox" class="session-opt" value="SB New York AM"> SB New York AM</label><br>
-                                        <label><input type="checkbox" class="session-opt" value="SB New York PM"> SB New York PM</label><br>
-                                        <label><input type="checkbox" class="session-opt" value="Macro xx.50-xx.10"> Macro xx.50–xx.10</label><br>
-                                        <label><input type="checkbox" class="session-opt" value="Macro xx.20-xx.40"> Macro xx.20–xx.40</label><br>
-                                        <label><input type="checkbox" class="session-opt" value="London Killzone"> London Killzone</label><br>
-                                        <label><input type="checkbox" class="session-opt" value="New York Killzone"> New York Killzone</label><br>
-                                    </div>
-                                    <button onclick="applySession()" class="mt-4 w-full bg-cyan-500 text-black py-2 rounded-md">
-                                        OK
-                                    </button>
-                                </div>
-                            </div>
-
+                            <label for="session" class="block text-sm font-medium text-gray-300">Time</label>
+                            <select id="session" multiple.select class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
+                                <option>Sesi Asia</option>
+                                <option>Sesi London</option>
+                                <option>Sesi New York</option>
+                                <option>Overlap LDN/NY</option>
+                                <option>SB London</option>
+                                <option>SB New York AM</option>
+                                <option>SB New York PM</option>
+                                <option>Macro xx.50-xx.10</option>
+                                <option>Macro xx.20-xx.40</option>
+                                <option>London Killzone</option>
+                                <option>New York Killzone</option>
+                            </select>
                         </div>
                         <div>
                             <label for="asset" class="block text-sm font-medium text-gray-300">Pair</label>
@@ -670,18 +653,6 @@
         clearForm();
         updateDashboard();
     }
-    function openSessionPicker(){
-        document.getElementById("session-modal").classList.remove("hidden");
-    }
-    function applySession(){
-        cons selected = Array.from(document.querySelectorAll(".session-opt:checked")).map(c=> c.value);
-
-        document.getElementById("session").value = selected.join(", ");
-        document.getElementById("session-display").textContent = selected.length ? selected.join(", ") : "Pilih Time....";
-        
-        document.getElementById("session-modal").classList.add("hidden"):
-    }
-    
     function editTrade(id) {
         const trade = trades.find(t => t.id === id);
         if (trade) {
