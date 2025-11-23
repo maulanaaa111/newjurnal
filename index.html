@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jurnal Trading Pro</title>
+    <title>Jurnal Trading By MaulKod</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,9 +39,9 @@
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         .panel:hover {
-            border-color: var(--glow-color);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 190, 255, 0.15);
+         border-color: var(--glow-color);
+         /* transform: translateY(-2px); */ /* HAPUS INI */
+         box-shadow: 0 10px 30px rgba(0, 190, 255, 0.15);
         }
 
         ::-webkit-scrollbar { width: 8px; }
@@ -243,13 +243,37 @@
                             <input type="date" id="date" required class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
                         </div>
                         <div>
-                            <label for="session" class="block text-sm font-medium text-gray-300">Sesi Trading</label>
-                            <select id="session" required class="mt-1 hud-input block w-full rounded-md shadow-sm text-white">
-                                <option>Sesi Asia</option>
-                                <option>Sesi London</option>
-                                <option>Sesi New York</option>
-                                <option>Overlap LDN/NY</option>
-                            </select>
+                            <label class="block text-sm font-medium text-gray-300">Time</label>
+                            <button type="button" id="session-display"
+                            onclick="openSessionPicker()"
+                            class="mt-1 hud-input block w-full text-left rounded-md shadow-sm text-white">
+                            Pilih sesi...
+                        </button>
+                        
+                        <input type="hidden" id="session">
+
+                        <div id="session-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+                                <div class="bg-gray-900 p-4 rounded-lg w-72">
+                                    <h3 class="text-white text-lg mb-3">Pilih Sesi</h3>
+                                    <div class="space-y-2 text-white">
+                                        <label><input type="checkbox" class="session-opt" value="Sesi Asia"> Sesi Asia</label><br>
+                                        <label><input type="checkbox" class="session-opt" value="Sesi London"> Sesi London</label><br>
+                                        <label><input type="checkbox" class="session-opt" value="Sesi New York"> Sesi New York</label><br>
+                                        <label><input type="checkbox" class="session-opt" value="Overlap LDN/NY"> Overlap LDN/NY</label><br>
+                                        <label><input type="checkbox" class="session-opt" value="SB London"> SB London</label><br>
+                                        <label><input type="checkbox" class="session-opt" value="SB New York AM"> SB New York AM</label><br>
+                                        <label><input type="checkbox" class="session-opt" value="SB New York PM"> SB New York PM</label><br>
+                                        <label><input type="checkbox" class="session-opt" value="Macro xx.50-xx.10"> Macro xx.50–xx.10</label><br>
+                                        <label><input type="checkbox" class="session-opt" value="Macro xx.20-xx.40"> Macro xx.20–xx.40</label><br>
+                                        <label><input type="checkbox" class="session-opt" value="London Killzone"> London Killzone</label><br>
+                                        <label><input type="checkbox" class="session-opt" value="New York Killzone"> New York Killzone</label><br>
+                                    </div>
+                                    <button onclick="applySession()" class="mt-4 w-full bg-cyan-500 text-black py-2 rounded-md">
+                                        OK
+                                    </button>
+                                </div>
+                            </div>
+
                         </div>
                         <div>
                             <label for="asset" class="block text-sm font-medium text-gray-300">Pair</label>
@@ -263,7 +287,6 @@
                                 <option>US500</option>
                                 <option>US30</option>
                                 <option>USOIL</option>
-                              <option>ETH/USD</option>
                             </select>
                         </div>
                         <div>
@@ -315,8 +338,7 @@
                         </div>
                     </form>
                 </div>
-                <div id="trade-log-container">
-                    <!-- Table populated by JS -->
+                    <div id="trade-log-container">
                 </div>
             </div>
         </main>
@@ -340,7 +362,7 @@
     let modalContainer = null;
     let currentJournalNameEl = null;
     let journalSwitcherEl = null;
-  const assetType = {
+    const assetType = {
     "XAU/USD": "gold",
     "EUR/USD": "forex",
     "GBP/USD": "forex",
@@ -545,29 +567,34 @@
         calculateLotSize();
     }
     function calculateLotSize() {
-    const balance = parseFloat(document.getElementById('lc-balance').value) || 0;
-    const riskPercent = parseFloat(document.getElementById('lc-risk').value) || 0;
-    const stopLossDistance = parseFloat(document.getElementById('lc-sl').value) || 0;
-    const contractSize = parseFloat(document.getElementById('lc-contract').value) || 0; 
-    const unit = document.getElementById('lc-unit').value;
-    const resultEl = document.getElementById('lc-result');
-
-    if (balance <= 0 || riskPercent <= 0 || stopLossDistance <= 0 || contractSize <= 0) { 
-        resultEl.textContent = '0.00';
-        return; 
+        const balance = parseFloat(document.getElementById('lc-balance').value) || 0;
+        const riskPercent = parseFloat(document.getElementById('lc-risk').value) || 0;
+        const stopLossDistance = parseFloat(document.getElementById('lc-sl').value) || 0;
+        const unit = document.getElementById('lc-unit').value;
+        const pair = document.getElementById('lc-pair').value;
+        const resultEl = document.getElementById('lc-result');
+        const accountType = journals.allJournals[currentJournalId].type;
+        if (balance <= 0 || riskPercent <= 0 || stopLossDistance <= 0) { resultEl.textContent = '0.00'; return; }
+        const riskAmount = balance * (riskPercent / 100);
+        
+        let valuePerUnitPerLot = 1; // Default for points on all pairs, and pips on Indices/Crypto
+        if (unit === 'pips') {
+            if (['EUR/USD', 'GBP/USD', 'XAU/USD','USD/JPY','NASDAQ', 'US500', 'US30', 'USOIL', 'BTC/USD', 'ETH/USD'].includes(pair)) {
+                valuePerUnitPerLot = 10; // $10 per pip for these pairs on a standard lot
+            }
+        }
+        
+        const stopLossInCurrency = stopLossDistance * valuePerUnitPerLot;
+        let lotSize = 0;
+        if (stopLossInCurrency > 0) {
+            lotSize = riskAmount / stopLossInCurrency;
+        }
+        
+        if (accountType === 'cent') {
+            lotSize *= 100;
+        }
+        resultEl.textContent = lotSize.toFixed(2);
     }
-
-    const riskAmount = balance * (riskPercent / 100);
-
-    let stopValue = stopLossDistance;
-    if (unit === 'pips') {
-        stopValue = stopLossDistance * 0.0001; 
-    }
-
-    const lotSize = riskAmount / (stopValue * contractSize);
-    resultEl.textContent = lotSize.toFixed(3);
-}
-
 
     // --- CORE LOGIC & CALCULATIONS ---
     function calculatePnl() {
@@ -595,8 +622,7 @@
             return diff * qty * 100000;
 
         case "forexJPY":       // USD/JPY
-            return diff * qty * 1000;
-
+             return diff * qty * 635;
         case "gold":           // XAU/USD
             return diff * qty * 100;
 
@@ -613,8 +639,6 @@
             return diff * qty;
     }
 }
-
-
     function handleFormSubmit(e) {
         e.preventDefault();
         const tradeId = document.getElementById('trade-id').value, pnl = parseFloat(document.getElementById('pnl').value);
@@ -625,7 +649,9 @@
             type: 'trade', 
             timestamp: existingTrade ? existingTrade.timestamp : Date.now(), 
             date: document.getElementById('date').value, 
-            session: document.getElementById('session').value, 
+            session: Array.from(document.getElementById('session').selectedOptions)
+                .map(opt=> opt.value)
+                .join(', '), 
             asset: document.getElementById('asset').value, 
             strategy: document.getElementById('strategy').value, 
             position: document.getElementById('position').value, 
@@ -644,6 +670,18 @@
         clearForm();
         updateDashboard();
     }
+    function openSessionPicker(){
+        document.getElementById("session-modal").classList.remove("hidden");
+    }
+    function applySession(){
+        cons selected = Array.from(document.querySelectorAll(".session-opt:checked")).map(c=> c.value);
+
+        document.getElementById("session").value = selected.join(", ");
+        document.getElementById("session-display").textContent = selected.length ? selected.join(", ") : "Pilih Time....";
+        
+        document.getElementById("session-modal").classList.add("hidden"):
+    }
+    
     function editTrade(id) {
         const trade = trades.find(t => t.id === id);
         if (trade) {
@@ -835,6 +873,22 @@
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
